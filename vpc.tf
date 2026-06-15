@@ -11,6 +11,8 @@ resource "aws_vpc" "main" {
   )
 }     #after this we need to record the vpc_id, so we can do that by output function, we need vpc_id to create the igw
 
+#we need get the availability zones as well for that we use the data source get the availability zones and we use slice functions for the two availability zones
+
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
@@ -29,10 +31,10 @@ resource "aws_internet_gateway" "igw" {
 # now we need to create the subnets
 
 resource "aws_subnet" "public" {
-  count = length(var.public_subnet_cidrs)
+  count = length(var.public_subnet_cidrs)                  #we use count function because we have two subnets in two availability zone, it will decide by iterations
   vpc_id     = aws_vpc.main.id
-  cidr_block = var.public_subnet_cidrs[count.index]
-  availability_zone = local.az_names[count.index]
+  cidr_block = var.public_subnet_cidrs[count.index]         #write the varaiables public_subnet_cidrs in varaiables
+  availability_zone = local.az_names[count.index]           #record the public_subnet_id in outputs
   map_public_ip_on_launch = true
 
   tags = merge (
@@ -82,7 +84,7 @@ resource "aws_subnet" "database" {
 
 resource "aws_db_subnet_group" "default" {
   name       = local.resource_name
-  subnet_ids = aws_subnet.database[*].id
+  subnet_ids = aws_subnet.database[*].id              #subnet_id for database_subnet is used here, which we recorded in outputs
 
   tags = merge (
     var.common_tags,
@@ -105,9 +107,9 @@ resource "aws_eip" "nat" {
 
 resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id
-
-  tags = merge (
+  subnet_id     = aws_subnet.public[0].id             #Outbound flow: EC2 in a private subnet sends traffic to the NAT Gateway through the route table, 
+                                                      #and the NAT Gateway changes the source IP to its Elastic IP and sends it into its public subnet,
+  tags = merge (                                      # where the route table forwards it to the Internet Gateway, which delivers it to the internet.
     var.common_tags,
     var.aws_nat_gateway_tags,
     {
