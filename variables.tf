@@ -27,7 +27,7 @@ variable "igw_tags" {
 }
 
 variable "public_subnet_cidrs" {
-    type = list
+    type = list                                                                           #It forces the user to pass exactly 2 CIDR blocks in this variable.
     validation {
         condition = length(var.public_subnet_cidrs) == 2
         error_message = "please provide 2 valid public public subnet CIDR"
